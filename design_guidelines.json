@@ -1,0 +1,102 @@
+{
+  "theme": {
+    "mode": "light",
+    "archetype": "4 (Swiss & High-Contrast)",
+    "description": "High-end, precise, and highly functional electronics repair platform. Blends architectural precision with technical reliability."
+  },
+  "colors": {
+    "background": "#FFFFFF",
+    "surface": "#F7F7F9",
+    "surface_glass": "rgba(255, 255, 255, 0.7)",
+    "primary": "#FF3B30",
+    "primary_hover": "#D93025",
+    "text_main": "#0F0F13",
+    "text_muted": "#6C6C75",
+    "border": "#E5E5EA",
+    "status": {
+      "success": "#34C759",
+      "warning": "#FFCC00",
+      "error": "#FF3B30",
+      "info": "#007AFF"
+    }
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Cabinet Grotesk, sans-serif",
+      "body": "Manrope, sans-serif",
+      "mono": "IBM Plex Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-5xl sm:text-6xl tracking-tighter font-black",
+      "h2": "text-3xl sm:text-4xl tracking-tight font-bold",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "body": "text-base leading-relaxed",
+      "label": "text-xs font-mono uppercase tracking-[0.2em]"
+    }
+  },
+  "layout": {
+    "marketing": {
+      "grid": "grid-cols-1 md:grid-cols-12 gap-8 md:gap-12",
+      "spacing": "py-24 px-6 md:px-12 lg:px-24",
+      "hero_overlay": "bg-white/70 md:bg-white/40 backdrop-blur-sm"
+    },
+    "dashboard": {
+      "grid": "grid-cols-1 md:grid-cols-4 gap-6",
+      "spacing": "p-6",
+      "surface_style": "border border-border bg-white rounded-none shadow-none"
+    }
+  },
+  "components": {
+    "button": {
+      "primary": "bg-[#FF3B30] text-white font-medium px-6 py-3 rounded-none hover:bg-[#D93025] transition-colors",
+      "secondary": "bg-[#F7F7F9] text-[#0F0F13] font-medium px-6 py-3 rounded-none border border-[#E5E5EA] hover:border-[#0F0F13] transition-all"
+    },
+    "card": {
+      "marketing": "bg-white border border-[#E5E5EA] p-8 rounded-none",
+      "dashboard": "bg-white border-b border-r border-[#E5E5EA] p-6 rounded-none"
+    },
+    "header": {
+      "style": "sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-[#E5E5EA]"
+    }
+  },
+  "media": {
+    "image_urls": {
+      "hero_background": {
+        "url": "https://images.unsplash.com/photo-1630588562940-949455f18324?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBzbWFydHBob25lJTIwY2lyY3VpdCUyMGJvYXJkfGVufDB8fHx8MTc3NTUwMjgwN3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Black and gray computer motherboard, perfect for a subtle, high-tech hero background."
+      },
+      "technician_action": {
+        "url": "https://images.unsplash.com/photo-1769763227060-726b7b926bf2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwzfHxlbGVjdHJvbmljcyUyMHJlcGFpciUyMHRlY2huaWNpYW58ZW58MHx8fHwxNzc1NTAyODA2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Young technician working on electronics at a desk, use for About or Service sections."
+      },
+      "circuit_board_detail": {
+        "url": "https://images.unsplash.com/photo-1733741020205-1ed0208314b6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBzbWFydHBob25lJTIwY2lyY3VpdCUyMGJvYXJkfGVufDB8fHx8MTc3NTUwMjgwN3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Close up of a motherboard, use for section dividers or diagnostic feature highlights."
+      },
+      "abstract_tech_texture": {
+        "url": "https://images.unsplash.com/photo-1763929154494-a3d6eba05282?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMHdoaXRlJTIwdGVjaG5vbG9neSUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzc1NTAyODIxfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract white technology background for clean, minimalist sections like AI chat or quotes."
+      }
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "stroke-width 1.5, rigid and technical"
+    }
+  },
+  "motion": {
+    "hover": "transition-transform duration-200 ease-out",
+    "entrance": "fade-in slide-in-from-bottom-4 duration-500"
+  },
+  "instructions_to_main_agent": [
+    "Use standard HTML/Tailwind for marketing layout (bento grids, overlapping). Avoid heavy use of Shadcn for layout.",
+    "For the admin/technician dashboards, use Shadcn heavily (tables, cards, dropdowns) but customize them to have sharp corners (`rounded-none`), 1px borders, and zero shadows. The UI must feel like a precision tool, not a bubbly SaaS.",
+    "For the Hero image, use the provided hero_background image URL with a bg-white/30 to bg-white/50 overlay to ensure text contrast while retaining the tech texture.",
+    "Use data-testid on every interactive element (buttons, forms, links) with kebab-case roles.",
+    "Use 'Cabinet Grotesk' for primary headers (import via Google Fonts or CDN) and 'Manrope' for body text. Use 'IBM Plex Mono' for tech details like quote IDs, repair numbers, or labels.",
+    "Never use fully transparent header. Must be backdrop-blur-xl with bg-white/70.",
+    "Replace generic buttons with square, sharp-edged vermillion (#FF3B30) primary buttons that signify 'Action' or 'Repair'.",
+    "For data tables in the admin view, use left alignment for text, right alignment for numbers/currency. Status indicators should be simple mono-colored dots or uppercase mono-spaced badges.",
+    "No placeholder images. ONLY use the URLs provided in this JSON.",
+    "Ensure all interactive hover states have explicit text color overrides, e.g., hover:bg-black hover:text-white."
+  ]
+}
