@@ -180,6 +180,15 @@ class TechnicianNoteInput(BaseModel):
     notes: str
     final_cost: Optional[float] = None
 
+class ReviewInput(BaseModel):
+    rating: int
+    comment: Optional[str] = ""
+
+class ProfileUpdateInput(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    default_address: Optional[str] = None
+
 # ── Auth Routes ──
 @api_router.post("/auth/register")
 async def register(inp: RegisterInput):
@@ -414,7 +423,7 @@ async def create_payment(request: Request):
 
 @api_router.post("/payments/{payment_id}/complete")
 async def complete_payment(payment_id: str, request: Request):
-    user = await get_current_user(request)
+    await get_current_user(request)
     payment = await db.payments.find_one({"id": payment_id})
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -519,8 +528,6 @@ async def admin_get_technicians(request: Request):
     user = await get_current_user(request)
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
-    techs = await db.users.find({"role": "technician"}, {"_id": 0, "password_hash": 0}).to_list(100)
-    # Include _id as string
     techs_raw = await db.users.find({"role": "technician"}).to_list(100)
     result = []
     for t in techs_raw:
@@ -638,6 +645,180 @@ async def get_chat_history(request: Request, session_id: Optional[str] = None):
     messages = await db.chat_messages.find(query, {"_id": 0}).sort("created_at", 1).to_list(100)
     return messages
 
+# ── Reviews ──
+@api_router.post("/bookings/{booking_id}/review")
+async def submit_review(booking_id: str, inp: ReviewInput, request: Request):
+    user = await get_current_user(request)
+    if user["role"] != "customer":
+        raise HTTPException(status_code=403, detail="Only customers can leave reviews")
+    booking = await db.bookings.find_one({"id": booking_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    if booking["customer_id"] != user["_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if booking["status"] != "completed":
+        raise HTTPException(status_code=400, detail="Can only review completed bookings")
+    existing = await db.reviews.find_one({"booking_id": booking_id, "customer_id": user["_id"]})
+    if existing:
+        raise HTTPException(status_code=400, detail="You already reviewed this booking")
+    if inp.rating < 1 or inp.rating > 5:
+        raise HTTPException(status_code=400, detail="Rating must be 1-5")
+    review = {
+        "id": str(uuid.uuid4()),
+        "booking_id": booking_id,
+        "customer_id": user["_id"],
+        "customer_name": user["name"],
+        "technician_id": booking.get("technician_id"),
+        "technician_name": booking.get("technician_name"),
+        "category_name": booking["category_name"],
+        "rating": inp.rating,
+        "comment": inp.comment or "",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.reviews.insert_one(review)
+    await db.bookings.update_one({"id": booking_id}, {"$set": {"has_review": True}})
+    review.pop("_id", None)
+    return review
+
+@api_router.get("/reviews")
+async def get_public_reviews():
+    reviews = await db.reviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(20)
+    return reviews
+
+@api_router.get("/bookings/{booking_id}/review")
+async def get_booking_review(booking_id: str, request: Request):
+    await get_current_user(request)
+    review = await db.reviews.find_one({"booking_id": booking_id}, {"_id": 0})
+    if not review:
+        raise HTTPException(status_code=404, detail="No review found")
+    return review
+
+@api_router.get("/admin/reviews")
+async def admin_get_reviews(request: Request):
+    user = await get_current_user(request)
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    reviews = await db.reviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return reviews
+
+# ── Profile ──
+@api_router.get("/profile")
+async def get_profile(request: Request):
+    user = await get_current_user(request)
+    full_user = await db.users.find_one({"_id": ObjectId(user["_id"])})
+    if not full_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": str(full_user["_id"]),
+        "email": full_user["email"],
+        "name": full_user["name"],
+        "phone": full_user.get("phone", ""),
+        "default_address": full_user.get("default_address", ""),
+        "role": full_user["role"],
+        "created_at": full_user.get("created_at", ""),
+    }
+
+@api_router.put("/profile")
+async def update_profile(inp: ProfileUpdateInput, request: Request):
+    user = await get_current_user(request)
+    update_fields = {}
+    if inp.name is not None:
+        update_fields["name"] = inp.name
+    if inp.phone is not None:
+        update_fields["phone"] = inp.phone
+    if inp.default_address is not None:
+        update_fields["default_address"] = inp.default_address
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$set": update_fields})
+    return {"message": "Profile updated", **update_fields}
+
+# ── Admin Reports ──
+@api_router.get("/admin/reports")
+async def admin_get_reports(request: Request):
+    user = await get_current_user(request)
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    # Bookings by category
+    cat_pipeline = [{"$group": {"_id": "$category_name", "count": {"$sum": 1}}}, {"$sort": {"count": -1}}]
+    cat_results = await db.bookings.aggregate(cat_pipeline).to_list(20)
+    bookings_by_category = [{"category": r["_id"], "count": r["count"]} for r in cat_results]
+
+    # Bookings by status
+    status_pipeline = [{"$group": {"_id": "$status", "count": {"$sum": 1}}}]
+    status_results = await db.bookings.aggregate(status_pipeline).to_list(20)
+    bookings_by_status = [{"status": r["_id"], "count": r["count"]} for r in status_results]
+
+    # Revenue by month (from payments)
+    rev_pipeline = [
+        {"$match": {"status": "completed"}},
+        {"$project": {"month": {"$substr": ["$created_at", 0, 7]}, "amount": 1}},
+        {"$group": {"_id": "$month", "revenue": {"$sum": "$amount"}, "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ]
+    rev_results = await db.payments.aggregate(rev_pipeline).to_list(24)
+    revenue_by_month = [{"month": r["_id"], "revenue": r["revenue"], "transactions": r["count"]} for r in rev_results]
+
+    # Technician performance
+    tech_pipeline = [
+        {"$match": {"technician_id": {"$ne": None}}},
+        {"$group": {
+            "_id": {"tech_id": "$technician_id", "tech_name": "$technician_name"},
+            "total_jobs": {"$sum": 1},
+            "completed": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
+            "in_progress": {"$sum": {"$cond": [{"$in": ["$status", ["assigned", "on_the_way", "in_progress"]]}, 1, 0]}},
+        }},
+        {"$sort": {"completed": -1}}
+    ]
+    tech_results = await db.bookings.aggregate(tech_pipeline).to_list(50)
+    technician_performance = []
+    for t in tech_results:
+        # Get avg rating for this technician
+        avg_rating_pipeline = [
+            {"$match": {"technician_id": t["_id"]["tech_id"]}},
+            {"$group": {"_id": None, "avg": {"$avg": "$rating"}, "count": {"$sum": 1}}}
+        ]
+        rating_result = await db.reviews.aggregate(avg_rating_pipeline).to_list(1)
+        avg_rating = round(rating_result[0]["avg"], 1) if rating_result else 0
+        review_count = rating_result[0]["count"] if rating_result else 0
+        technician_performance.append({
+            "technician_id": t["_id"]["tech_id"],
+            "technician_name": t["_id"]["tech_name"],
+            "total_jobs": t["total_jobs"],
+            "completed": t["completed"],
+            "in_progress": t["in_progress"],
+            "avg_rating": avg_rating,
+            "review_count": review_count,
+        })
+
+    # Recent bookings trend (last 30 days, by day)
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    trend_pipeline = [
+        {"$match": {"created_at": {"$gte": thirty_days_ago}}},
+        {"$project": {"day": {"$substr": ["$created_at", 0, 10]}}},
+        {"$group": {"_id": "$day", "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ]
+    trend_results = await db.bookings.aggregate(trend_pipeline).to_list(31)
+    booking_trend = [{"date": r["_id"], "bookings": r["count"]} for r in trend_results]
+
+    # Average rating
+    avg_pipeline = [{"$group": {"_id": None, "avg": {"$avg": "$rating"}, "total": {"$sum": 1}}}]
+    avg_result = await db.reviews.aggregate(avg_pipeline).to_list(1)
+    avg_rating = round(avg_result[0]["avg"], 1) if avg_result else 0
+    total_reviews = avg_result[0]["total"] if avg_result else 0
+
+    return {
+        "bookings_by_category": bookings_by_category,
+        "bookings_by_status": bookings_by_status,
+        "revenue_by_month": revenue_by_month,
+        "technician_performance": technician_performance,
+        "booking_trend": booking_trend,
+        "avg_rating": avg_rating,
+        "total_reviews": total_reviews,
+    }
+
 # ── Root ──
 @api_router.get("/")
 async def root():
@@ -653,6 +834,8 @@ async def startup():
     await db.bookings.create_index("id", unique=True)
     await db.payments.create_index("id", unique=True)
     await db.chat_messages.create_index("session_id")
+    await db.reviews.create_index("booking_id")
+    await db.reviews.create_index("technician_id")
     # Seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@fixbook.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
@@ -674,7 +857,7 @@ async def startup():
         with open("/app/memory/test_credentials.md", "w") as f:
             f.write("# Test Credentials\n\n")
             f.write(f"## Admin\n- Email: {admin_email}\n- Password: {admin_password}\n- Role: admin\n\n")
-            f.write(f"## Technician\n- Email: tech@fixbook.com\n- Password: tech123\n- Role: technician\n\n")
+            f.write("## Technician\n- Email: tech@fixbook.com\n- Password: tech123\n- Role: technician\n\n")
             f.write("## Customer\n- Register a new account via /register\n- Role: customer\n\n")
             f.write("## Auth Endpoints\n- POST /api/auth/register\n- POST /api/auth/login\n- POST /api/auth/logout\n- GET /api/auth/me\n- POST /api/auth/refresh\n")
     except Exception as e:

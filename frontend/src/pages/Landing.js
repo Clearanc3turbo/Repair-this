@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Smartphone, Laptop, Tv, Tablet, Gamepad2, Headphones, ArrowRight, Shield, Clock, BadgeCheck } from "lucide-react";
+import API from "../lib/api";
+import { Smartphone, Laptop, Tv, Tablet, Gamepad2, Headphones, ArrowRight, Shield, Clock, BadgeCheck, Star } from "lucide-react";
 
 const SERVICES = [
   { id: "phone", name: "Phone Repair", desc: "Screen, battery, charging port", icon: Smartphone, price: "From $49" },
@@ -20,6 +22,11 @@ const STEPS = [
 
 export default function Landing() {
   const { user } = useAuth();
+  const [reviews, setReviews] = useState([]);
+
+  useEffect(() => {
+    API.get("/reviews").then(r => setReviews(r.data.slice(0, 6))).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -149,6 +156,32 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* Reviews */}
+      {reviews.length > 0 && (
+        <section className="py-24 px-6 md:px-12 lg:px-24 border-t border-[#E5E5EA]" data-testid="reviews-section">
+          <div className="max-w-7xl mx-auto">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#FF3B30] mb-4">Testimonials</p>
+            <h2 className="font-heading text-3xl sm:text-4xl tracking-tight font-bold text-[#0F0F13]">What Customers Say</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-[#E5E5EA] mt-12 border border-[#E5E5EA]">
+              {reviews.map((r) => (
+                <div key={r.id} className="bg-white p-6" data-testid={`review-${r.id}`}>
+                  <div className="flex gap-0.5 mb-3">
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <Star key={s} className={`h-4 w-4 ${s <= r.rating ? "text-[#FFCC00] fill-[#FFCC00]" : "text-[#E5E5EA]"}`} strokeWidth={1.5} />
+                    ))}
+                  </div>
+                  {r.comment && <p className="font-body text-sm text-[#0F0F13] mb-3 leading-relaxed">{r.comment}</p>}
+                  <div className="flex items-center justify-between">
+                    <p className="font-heading text-sm font-semibold text-[#0F0F13]">{r.customer_name}</p>
+                    <p className="font-mono text-[10px] text-[#6C6C75]">{r.category_name}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="border-t border-[#E5E5EA] bg-[#0F0F13] py-24 px-6 md:px-12 lg:px-24" data-testid="cta-section">

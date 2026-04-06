@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
-import { Wrench, User, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
+import { Wrench, User, LogOut, LayoutDashboard, ChevronDown, UserCog } from "lucide-react";
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -46,6 +46,10 @@ export default function Header() {
                 <DropdownMenuItem onClick={() => navigate(getDashboardLink())} className="cursor-pointer" data-testid="menu-dashboard">
                   <LayoutDashboard className="h-4 w-4 mr-2" strokeWidth={1.5} />
                   Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/dashboard/profile")} className="cursor-pointer" data-testid="menu-profile">
+                  <UserCog className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                  Profile
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-[#FF3B30]" data-testid="menu-logout">

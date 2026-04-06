@@ -12,6 +12,7 @@ import CustomerDashboard from "./pages/customer/Dashboard";
 import NewBooking from "./pages/customer/NewBooking";
 import BookingDetail from "./pages/customer/BookingDetail";
 import TechDashboard from "./pages/technician/TechDashboard";
+import Profile from "./pages/customer/Profile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
 function AppLayout({ children, showHeader = true }) {
@@ -46,6 +47,11 @@ function App() {
           <Route path="/dashboard/booking/:id" element={
             <ProtectedRoute roles={["customer"]}>
               <AppLayout><BookingDetail /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/profile" element={
+            <ProtectedRoute roles={["customer", "technician", "admin"]}>
+              <AppLayout><Profile /></AppLayout>
             </ProtectedRoute>
           } />
           <Route path="/technician" element={

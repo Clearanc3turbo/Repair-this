@@ -402,6 +402,111 @@ class FixBookAPITester:
             200
         )
 
+    def test_profile_endpoints(self):
+        """Test profile endpoints (Phase 2)"""
+        print("\n" + "="*50)
+        print("TESTING PROFILE ENDPOINTS (PHASE 2)")
+        print("="*50)
+
+        # Login as customer first
+        customer_email = f"test_customer_{datetime.now().strftime('%H%M%S')}@test.com"
+        self.session.post(f"{self.base_url}/api/auth/register", 
+                         json={"email": customer_email, "password": "testpass123", "name": "Test Customer"})
+
+        # Get profile
+        success, response = self.run_test(
+            "Get User Profile",
+            "GET",
+            "profile",
+            200
+        )
+        if success:
+            print(f"   Profile loaded for: {response.get('name')}")
+
+        # Update profile
+        profile_data = {
+            "name": "Updated Test Customer",
+            "phone": "+1555123456",
+            "default_address": "456 Updated St, New City, State 54321"
+        }
+        self.run_test(
+            "Update User Profile",
+            "PUT",
+            "profile",
+            200,
+            data=profile_data
+        )
+
+    def test_review_endpoints(self):
+        """Test review endpoints (Phase 2)"""
+        print("\n" + "="*50)
+        print("TESTING REVIEW ENDPOINTS (PHASE 2)")
+        print("="*50)
+
+        # Get public reviews
+        success, response = self.run_test(
+            "Get Public Reviews",
+            "GET",
+            "reviews",
+            200
+        )
+        if success:
+            print(f"   Found {len(response)} public reviews")
+
+        # Test getting review for non-existent booking (should fail)
+        fake_booking_id = str(uuid.uuid4())
+        self.run_test(
+            "Get Review for Non-existent Booking",
+            "GET",
+            f"bookings/{fake_booking_id}/review",
+            404
+        )
+
+        # Note: Testing review submission requires a completed booking
+        # This would be tested in the full workflow test
+        print("   ✅ Review endpoints accessible")
+
+    def test_admin_reports_endpoint(self):
+        """Test admin reports endpoint (Phase 2)"""
+        print("\n" + "="*50)
+        print("TESTING ADMIN REPORTS ENDPOINT (PHASE 2)")
+        print("="*50)
+
+        # Login as admin
+        self.session.post(f"{self.base_url}/api/auth/login", 
+                         json={"email": "admin@fixbook.com", "password": "admin123"})
+
+        # Get admin reports
+        success, response = self.run_test(
+            "Get Admin Reports",
+            "GET",
+            "admin/reports",
+            200
+        )
+        if success:
+            # Check if all expected report sections are present
+            expected_keys = [
+                "bookings_by_category", 
+                "bookings_by_status", 
+                "revenue_by_month", 
+                "technician_performance", 
+                "booking_trend",
+                "avg_rating",
+                "total_reviews"
+            ]
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                print(f"   ⚠️  Missing report sections: {missing_keys}")
+            else:
+                print("   ✅ All report sections present")
+                print(f"   - Categories: {len(response.get('bookings_by_category', []))}")
+                print(f"   - Status breakdown: {len(response.get('bookings_by_status', []))}")
+                print(f"   - Revenue months: {len(response.get('revenue_by_month', []))}")
+                print(f"   - Technician performance: {len(response.get('technician_performance', []))}")
+                print(f"   - Booking trend: {len(response.get('booking_trend', []))}")
+                print(f"   - Average rating: {response.get('avg_rating', 0)}")
+                print(f"   - Total reviews: {response.get('total_reviews', 0)}")
+
     def test_file_upload(self):
         """Test file upload endpoint"""
         print("\n" + "="*50)
@@ -439,6 +544,9 @@ class FixBookAPITester:
             self.test_technician_endpoints()
             self.test_payment_endpoints()
             self.test_ai_chat_endpoint()
+            self.test_profile_endpoints()  # Phase 2
+            self.test_review_endpoints()   # Phase 2
+            self.test_admin_reports_endpoint()  # Phase 2
             self.test_file_upload()
 
             # Print final results
