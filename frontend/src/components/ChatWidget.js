@@ -40,7 +40,7 @@ export default function ChatWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#FF3B30] text-white flex items-center justify-center shadow-lg hover:bg-[#D93025] transition-colors"
+          className="fixed bottom-20 right-6 z-50 w-14 h-14 bg-[#FF3B30] text-white flex items-center justify-center shadow-lg hover:bg-[#D93025] transition-colors"
           data-testid="chat-toggle-btn"
         >
           <MessageSquare className="h-6 w-6" strokeWidth={1.5} />
@@ -49,7 +49,7 @@ export default function ChatWidget() {
 
       {/* Chat Panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-[380px] h-[520px] bg-white border border-[#E5E5EA] shadow-2xl flex flex-col" data-testid="chat-panel">
+        <div className="fixed bottom-20 right-6 z-50 w-[380px] h-[520px] bg-white border border-[#E5E5EA] shadow-2xl flex flex-col" data-testid="chat-panel">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E5EA] bg-[#F7F7F9]">
             <div className="flex items-center gap-2">
