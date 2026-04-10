@@ -44,12 +44,28 @@ Web platform for an in-house electronics repair business. Customers can request/
 ## Prioritized Backlog
 ### P0 (Done)
 - Core booking flow, auth, role-based dashboards
+- Reviews/ratings, profile editing, admin reports with charts
 
 ### P1 (Next)
 - Real PayPal integration (needs client_id and secret)
 - WhatsApp notifications via Twilio
 - Email notifications via SendGrid/Resend
 - Reviews and ratings system
+
+### P2
+- Dynamic pricing by urgency
+- Subscription maintenance plans
+- Promo codes and referral system
+- Multi-city service expansion
+- Inventory/parts management
+
+## Next Tasks
+1. Integrate real PayPal when user provides API keys
+2. Add notification system (WhatsApp + Email)
+3. Implement reviews/ratings for completed jobs
+4. Add customer profile editing
+5. Enhanced admin reporting with charts
+s system
 
 ### P2
 - Dynamic pricing by urgency
