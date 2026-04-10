@@ -645,6 +645,28 @@ async def get_chat_history(request: Request, session_id: Optional[str] = None):
     messages = await db.chat_messages.find(query, {"_id": 0}).sort("created_at", 1).to_list(100)
     return messages
 
+# ── Popular Services (public) ──
+@api_router.get("/popular-services")
+async def get_popular_services():
+    pipeline = [
+        {"$group": {"_id": "$category_id", "category_name": {"$first": "$category_name"}, "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 6}
+    ]
+    results = await db.bookings.aggregate(pipeline).to_list(6)
+    # Also get avg rating per category
+    for r in results:
+        rating_pipeline = [
+            {"$lookup": {"from": "bookings", "localField": "booking_id", "foreignField": "id", "as": "booking"}},
+            {"$unwind": "$booking"},
+            {"$match": {"booking.category_id": r["_id"]}},
+            {"$group": {"_id": None, "avg": {"$avg": "$rating"}, "count": {"$sum": 1}}}
+        ]
+        rating_result = await db.reviews.aggregate(rating_pipeline).to_list(1)
+        r["avg_rating"] = round(rating_result[0]["avg"], 1) if rating_result else 0
+        r["review_count"] = rating_result[0]["count"] if rating_result else 0
+    return [{"category_id": r["_id"], "category_name": r["category_name"], "booking_count": r["count"], "avg_rating": r["avg_rating"], "review_count": r["review_count"]} for r in results]
+
 # ── Reviews ──
 @api_router.post("/bookings/{booking_id}/review")
 async def submit_review(booking_id: str, inp: ReviewInput, request: Request):
